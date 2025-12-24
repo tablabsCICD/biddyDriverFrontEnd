@@ -8,36 +8,40 @@ class RideBid {
   String? lattitude;
   String? longitude;
 
-  RideBid(
-      {this.bidAmount,
+  RideBid({
+    this.bidAmount,
+    this.driverId,
+    this.id,
+    this.rideId,
+    this.status,
+    this.vehicleId,
+    this.lattitude,
+    this.longitude,
+  });
 
-        this.driverId,
-        this.id,
-        this.rideId,
-        this.status,
-        });
-
-  RideBid.fromJson(Map<String, dynamic> json) {
-    bidAmount = json['bidAmount'];
-    driverId = json['driverId'];
-    id = json['id'];
-    rideId = json['rideId'];
-    status = json['status'];
-    vehicleId = json['vehicleId'];
-    lattitude = json['lattitude'];
-    longitude = json['longitude'];
+  factory RideBid.fromJson(Map<String, dynamic> json) {
+    return RideBid(
+      bidAmount: json['bidAmount'],
+      driverId: json['driverId'],
+      id: json['id'],
+      rideId: json['rideId'],
+      status: json['status'],
+      vehicleId: json['vehicleId'],
+      lattitude: json['lattitude'],
+      longitude: json['longitude'],
+    );
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['bidAmount'] = this.bidAmount;
-    data['driverId'] = this.driverId;
-    data['id'] = this.id;
-    data['rideId'] = this.rideId;
-    data['status'] = this.status;
-    data['vehicleId'] = this.vehicleId;
-    data['lattitude'] = this.lattitude;
-    data['longitude'] = this.longitude;
-    return data;
+    return {
+      "bidAmount": bidAmount,
+      "driverId": driverId,
+      "id": id,
+      "rideId": rideId,
+      "status": status,
+      "vehicleId": vehicleId,
+      "lattitude": lattitude,
+      "longitude": longitude,
+    };
   }
 }

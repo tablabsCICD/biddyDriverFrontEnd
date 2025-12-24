@@ -1,105 +1,213 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:biddy_driver/model/activeRideResponse.dart';
-import 'package:biddy_driver/model/api_response.dart';
-import 'package:biddy_driver/model/bank_reponse.dart';
-import 'package:biddy_driver/model/base_model/bank_model.dart';
-import 'package:biddy_driver/model/ride_status_change_response.dart';
-import 'package:biddy_driver/model/saveDriverCabDetails.dart';
-import 'package:biddy_driver/model/base_model/driver_model.dart';
 import 'package:biddy_driver/provider/provider.dart';
-import 'package:biddy_driver/constant/app_constant.dart';
-import 'package:biddy_driver/model/cabDetails.dart';
-import 'package:biddy_driver/route/app_routes.dart';
-import 'package:biddy_driver/util/sharepreferences.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 
 import '../constant/api_constant.dart';
+import '../constant/app_constant.dart';
+import '../model/activeRideResponse.dart';
+import '../model/api_response.dart';
+import '../model/base_model/driver_model.dart';
 import '../model/base_model/ride_model.dart';
+import '../model/ride_status_change_response.dart';
+import '../route/app_routes.dart';
+import '../util/sharepreferences.dart';
 
 class RideProvider extends BaseProvider {
+  RideProvider(BuildContext context) : super("");
 
-  RideProvider(BuildContext context):super(""){
-    getRideListByDriverId(context);
+  /// =========================
+  /// RIDE LISTS
+  /// =========================
+  final List<RideData> activeRideList = [];
+  final List<RideData> completedRideList = [];
+  final List<RideData> cancelledRideList = [];
 
+  /// =========================
+  /// LOADING
+  /// =========================
+  bool isLoading = false;
+  bool isLoad = false;
+
+  /// =========================
+  /// PAGINATION
+  /// =========================
+  int _page = 0;
+  bool _hasMore = true;
+
+  /// =========================
+  /// HELPERS
+  /// =========================
+  bool _contains(List<RideData> list, int? id) {
+    return list.any((e) => e.id == id);
   }
 
+  /// =========================
+  /// FETCH RIDES
+  /// =========================
+  Future<List<RideData>> _fetchRides(BuildContext context) async {
+    try {
+      DriverModel user = await LocalSharePreferences().getLoginData();
+      int? driverId = user.data?.id;
 
-  List<RideData> rideList = [];
-  List<RideData> activeRideList = [];
-  List<RideData> cancelledRideList = [];
-  List<RideData> completedRideList = [];
-  bool isLoading = false;
+      if (driverId == null) return [];
 
-  getRideListByDriverId(BuildContext context) async {
-    isLoading = true;
-    notifyListeners();
-    DriverModel  userData= await LocalSharePreferences().getLoginData();
-    int? uId= userData.data!.id;
-    String myUrl = APIConstants.ALL_RIDE_DRIVERID+uId.toString();
-    print("get ride:"+myUrl);
-    ApiResponse apiResponse = await AppConstant.apiHelper.ApiGetData(myUrl);
-    if(apiResponse.status==200){
-      final res = json.decode(apiResponse.response);
-      print('the sccussess:${apiResponse.response}');
-      ActiveRideListResponse rideBooking=ActiveRideListResponse.fromJson(res);
-      rideList.addAll(rideBooking.data!);
-      if(rideBooking.data!.isEmpty){
-        SnackBar snackBar = SnackBar(
-          content: Text("Your don't have any ride history"),
-          duration: Duration(seconds: 2),
+      final url =
+          "${APIConstants.ALL_RIDE_DRIVERID}$driverId?page=$_page";
+
+      /// Ensure HTTPS
+      final uri = Uri.parse(url);
+
+      debugPrint("Fetching rides: $uri");
+
+      final response = await http.get(
+        uri,
+        headers: const {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+      );
+
+      debugPrint("Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final ActiveRideListResponse res =
+        ActiveRideListResponse.fromJson(
+          jsonDecode(response.body),
         );
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      }else{
-        rideList.forEach((element) {
-          if(element.status==AppConstant.status_accepted){
-            activeRideList.add(element);
-          }else if(element.status == AppConstant.status_end_ride){
-            completedRideList.add(element);
-          }else if(element.status == AppConstant.status_accepted){
-            cancelledRideList.add(element);
-          }
-        });
+        completedRideList.addAll(res.data as Iterable<RideData>);
+        debugPrint("Response: ${res.data}");
+
+        debugPrint("Response: ${res.data!.length}");
+
+        return res.data ?? [];
+      } else {
+        debugPrint("Failed with status: ${response.statusCode}");
+        return [];
       }
-      appState="Ideal";
-      notifyListeners();
-      return apiResponse;
-    }else{
-      appState="Ideal";
-      notifyListeners();
-      print('the Failed:${apiResponse.response}');
-      appState="Ideal";
-      notifyListeners();
-      return apiResponse;
+    } catch (e, stackTrace) {
+      debugPrint("Fetch rides error: $e");
+      debugPrintStack(stackTrace: stackTrace);
+      return [];
     }
   }
 
-  bool isLoad = false;
-  changeStatus(BuildContext context,String status,RideData rideData) async {
+  /// =========================
+  /// LOAD RIDES (ALL TABS)
+  /// =========================
+  Future<void> loadRides(
+      BuildContext context, {
+        bool refresh = false,
+      }) async {
+    if (isLoading || (!_hasMore && !refresh)) return;
+
+    isLoading = true;
+    notifyListeners();
+
+    if (refresh) {
+      _page = 0;
+      _hasMore = true;
+      activeRideList.clear();
+      completedRideList.clear();
+      cancelledRideList.clear();
+    }
+
+    List<RideData> data = await _fetchRides(context);
+
+    for (final ride in data) {
+      debugPrint("Status: ${ride.status}");
+
+      if (ride.status == AppConstant.status_end_ride) {
+        if (!_contains(completedRideList, ride.id)) {
+          completedRideList.add(ride);
+        }
+      }
+
+    /// CANCELLED
+      else if (ride.status == AppConstant.status_cancelled) {
+        if (!_contains(cancelledRideList, ride.id)) {
+          cancelledRideList.add(ride);
+        }
+      }
+      /// ACTIVE
+      else {
+        if (!_contains(activeRideList, ride.id)) {
+          activeRideList.add(ride);
+        }
+      }
+    }
+    debugPrint("Response: ${completedRideList.length}");
+
+
+    _hasMore = data.isNotEmpty;
+    _page++;
+
+    isLoading = false;
+    notifyListeners();
+  }
+
+  /// ===============================
+  /// CHANGE RIDE STATUS
+  /// ===============================
+  Future<void> changeStatus(
+      BuildContext context,
+      String status,
+      RideData rideData,
+      ) async {
     isLoad = true;
     notifyListeners();
 
-    String url = APIConstants.RIDE_STATUS_CHANGE;
-    print(url);
-    ApiResponse apiResponse = await AppConstant.apiHelper
-        .putDataArgument(url,{
-      "id": rideData.id,
-      "status": status
-    });
-    print(apiResponse.response);
-    var res = jsonDecode(apiResponse.response);
-    if(apiResponse.status==200){
-      RideStatusChangeResponse rideAcceptResponse = RideStatusChangeResponse.fromJson(res);
-      rideData = rideAcceptResponse.data!;
-      if(status.compareTo(AppConstant.status_end_ride)==0){
-        Navigator.pushReplacementNamed(context, AppRoutes.endride,arguments: rideData);
-      }
-    }else{
+    try {
+      String url = APIConstants.RIDE_STATUS_CHANGE;
 
+      ApiResponse apiResponse =
+      await AppConstant.apiHelper.putDataArgument(
+        url,
+        {
+          "id": rideData.id,
+          "status": status,
+        },
+      );
+
+      if (apiResponse.status == 200) {
+        final res = jsonDecode(apiResponse.response);
+        RideStatusChangeResponse response =
+        RideStatusChangeResponse.fromJson(res);
+
+        RideData updatedRide = response.data!;
+
+        /// REMOVE FROM ALL LISTS
+        activeRideList.removeWhere((e) => e.id == updatedRide.id);
+        completedRideList.removeWhere((e) => e.id == updatedRide.id);
+        cancelledRideList.removeWhere((e) => e.id == updatedRide.id);
+
+        /// ADD TO CORRECT LIST
+        if (updatedRide.status == AppConstant.status_end_ride) {
+          completedRideList.insert(0, updatedRide);
+        } else if (updatedRide.status == AppConstant.status_cancelled) {
+          cancelledRideList.insert(0, updatedRide);
+        } else {
+          activeRideList.insert(0, updatedRide);
+        }
+
+        notifyListeners();
+
+        /// NAVIGATION
+        if (status == AppConstant.status_end_ride) {
+          Navigator.pushReplacementNamed(
+            context,
+            AppRoutes.endride,
+            arguments: updatedRide,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Change status failed: $e");
+    } finally {
+      isLoad = false;
+      notifyListeners();
     }
   }
-
 }
-
-

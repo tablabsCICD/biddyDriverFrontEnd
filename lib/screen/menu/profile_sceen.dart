@@ -1,10 +1,6 @@
-
-
 import 'package:biddy_driver/constant/text_constant.dart';
-import 'package:biddy_driver/model/base_model/driver_model.dart';
 import 'package:biddy_driver/provider/editprofile_provider.dart';
 import 'package:biddy_driver/route/app_routes.dart';
-import 'package:biddy_driver/screen/menu/profile_menu_wiget.dart';
 import 'package:biddy_driver/util/sharepreferences.dart';
 import 'package:biddy_driver/util/textview.dart';
 import 'package:biddy_driver/widgets/app_bar.dart';
@@ -17,233 +13,236 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() {
-    return ProfileScreenState();
-  }
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class ProfileScreenState extends State<ProfileScreen>{
-
-
+class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
     return ChangeNotifierProvider(
-      create: (BuildContext context) => EditProfileProvider(context),
-      builder: (context, child) => _buildPage(context),
-    );
-  }
+      create: (_) => EditProfileProvider(context),
+      child: Scaffold(
+        backgroundColor: const Color(0xffF7F8FA),
+        appBar: ApplicationAppBar().commonAppBar(context, "My Profile"),
+        body: SafeArea(
+          child: Consumer<EditProfileProvider>(
+            builder: (_, provider, __) {
+              if (provider.userData?.data == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-  _buildPage(context){
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: ApplicationAppBar().commonAppBar(context, "My Profile"),
-      body: SafeArea(
-        child: Consumer<EditProfileProvider>(
-            builder: (context, provider, child) {
-              return  Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              child: provider.userData!.data == null
-                  ? Center(
-                child: CircularProgressIndicator(),
-              )
-                  : Stack(
+              final user = provider.userData!.data!;
+
+              return Column(
                 children: [
-                  SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Card(
-                          elevation: 3,
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          child: Container(
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// 🔹 PROFILE HEADER
+                          Card(
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            padding: EdgeInsets.symmetric(horizontal: 15,vertical: 15),
-                            child: Row(
-                           //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                    width: 90,
-                                    height: 90,
-                                    decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.grey[100],
-                                        image: new DecorationImage(
-                                            fit: BoxFit.fill,
-                                            image: AssetImage('assets/profile.jpg')))),
-                                SizedBox(width: 16,),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    TextView(
-                                        title: provider.userData!.data!.firstName??'Your Name' +
-                                            " " +
-                                            "${provider.userData!.data!.lastName??" "}",
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18),
-                                    TextView(
-                                        title: provider.userData!.data!.emailId??'your email id',
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.normal,
-                                        fontSize: 12),
-                                    Row(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 40,
+                                    backgroundColor: Colors.grey.shade200,
+                                    backgroundImage:
+                                    const AssetImage('assets/profile.jpg'),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                       children: [
-                                        Icon(Icons.call_outlined,size: 15,),
-                                        SizedBox(
-                                          width: 4,
-                                        ),
                                         TextView(
-                                            title: provider.userData!.data!.phoneNumber??'',
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.normal,
-                                            fontSize: 12),
+                                          title:
+                                          "${user.firstName ?? ''} ${user.lastName ?? ''}",
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        TextView(
+                                          title: user.emailId ?? '',
+                                          fontSize: 13,
+                                          color: Colors.grey, fontWeight: FontWeight.w500,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.call,
+                                                size: 14,
+                                                color: Colors.grey),
+                                            const SizedBox(width: 6),
+                                            TextView(
+                                              title:
+                                              user.phoneNumber ?? '',
+                                              fontSize: 13,
+                                              color: Colors.black87, fontWeight: FontWeight.w500,
+                                            ),
+                                          ],
+                                        ),
                                       ],
-                                    )
-                                  ],
-                                ),
-                                InkWell(
-                                    onTap: () {
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: SvgPicture.asset(
+                                      "assets/edit.svg",
+                                      height: 20,
+                                    ),
+                                    onPressed: () {
                                       Navigator.pushNamed(
-                                          context, AppRoutes.edit_profile,
-                                          arguments: provider.userData!);
+                                        context,
+                                        AppRoutes.edit_profile,
+                                        arguments: provider.userData!,
+                                      );
                                     },
-                                    child:SvgPicture.asset("assets/edit.svg")
-                                ),
-
-
-                              ],
+                                  )
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 30),
-                        TextView(
-                            title: "QUICK LINKS",
-                            color: Colors.black,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16),
-                        const SizedBox(height: 30),
-                        ProfileMenuWidget(
-                            title: TextConstant.setting,
-                            icon: Icons.settings,
-                            onPress: () {
-                              // Navigator.pushNamed(context, routeName)
-                            }),
-                        const SizedBox(height: 20),
-                        ProfileMenuWidget(
-                            title: TextConstant.add_vehicle,
-                            icon: Icons.add,
-                            onPress: () {
-                              Navigator.pushNamed(
-                                  context, AppRoutes.direverCar);
-                            }),
-                        const SizedBox(height: 20),
-                        ProfileMenuWidget(
-                            title: TextConstant.bank_detail,
-                            icon: Icons.account_balance,
-                            onPress: () {
-                              Navigator.pushNamed(
-                                  context, AppRoutes.bank_details);
-                            }),
-                        const SizedBox(height: 20),
-                        ProfileMenuWidget(
-                            title: TextConstant.preferred_route,
-                            icon: Icons.route,
-                            onPress: () {
-                              Navigator.pushNamed(
-                                  context, AppRoutes.preffered_routes);
-                            }),
-                        const SizedBox(height: 20),
-                        ProfileMenuWidget(
-                            title: TextConstant.wallet,
-                            icon: Icons.wallet,
-                            onPress: () {
-                              Navigator.pushNamed(context, AppRoutes.earning);
-                            }),
-                        const SizedBox(height: 20),
-                        ProfileMenuWidget(
-                            title: TextConstant.past_ride,
-                            icon: Icons.history,
-                            onPress: () {
-                              Navigator.pushNamed(
-                                  context, AppRoutes.history);
-                            }),
-                        const SizedBox(height: 20),
-                        ProfileMenuWidget(
-                            title: TextConstant.termsandcondition,
-                            icon: Icons.info,
-                            onPress: () {}),
 
-                      ],
+                          const SizedBox(height: 30),
+
+                          /// 🔹 QUICK LINKS
+                          const Text(
+                            "QUICK LINKS",
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          _menuTile(
+                            icon: Icons.settings,
+                            title: TextConstant.setting,
+                            onTap: () {},
+                          ),
+                          _menuTile(
+                            icon: Icons.add_circle_outline,
+                            title: TextConstant.add_vehicle,
+                            onTap: () =>
+                                Navigator.pushNamed(context, AppRoutes.direverCar),
+                          ),
+                          _menuTile(
+                            icon: Icons.account_balance,
+                            title: TextConstant.bank_detail,
+                            onTap: () => Navigator.pushNamed(
+                                context, AppRoutes.bank_details),
+                          ),
+                          _menuTile(
+                            icon: Icons.route,
+                            title: TextConstant.preferred_route,
+                            onTap: () => Navigator.pushNamed(
+                                context, AppRoutes.preffered_routes),
+                          ),
+                          _menuTile(
+                            icon: Icons.wallet,
+                            title: TextConstant.wallet,
+                            onTap: () =>
+                                Navigator.pushNamed(context, AppRoutes.earning),
+                          ),
+                          _menuTile(
+                            icon: Icons.history,
+                            title: TextConstant.past_ride,
+                            onTap: () =>
+                                Navigator.pushNamed(context, AppRoutes.history),
+                          ),
+                          _menuTile(
+                            icon: Icons.info_outline,
+                            title: TextConstant.termsandcondition,
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width,
-                      child: AppButton(
-                          buttonTitle: TextConstant.logout,
-                          onClick: (){
-                            showAlertDialog(context);
-                          }, enbale: true),
+
+                  /// 🔹 LOGOUT BUTTON
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: AppButton(
+                      buttonTitle: TextConstant.logout,
+                      enbale: true,
+                      onClick: () => _showLogoutDialog(context),
                     ),
-                  )
+                  ),
                 ],
-              ),
-            ),
-          );
-        },
-      ),)
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 
-
-  showAlertDialog(BuildContext context) {
-    // set up the button
-    Widget okButton = TextButton(
-      child: Text(TextConstant.ok),
-      onPressed: () async{
-        await LocalSharePreferences().logOut();
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.entryScreen, (route) => false) ;
-      },
+  /// 🔹 MENU TILE
+  Widget _menuTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.black87),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
     );
+  }
 
-    Widget cancelButton = TextButton(
-      child: Text(TextConstant.cancel),
-      onPressed: () {
-        Navigator.pop(context);
-
-      },
-    );
-
-    // set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: Text(TextConstant.logout),
-      content: Text(TextConstant.logoutmsg),
-      actions: [
-        okButton,
-        cancelButton
-      ],
-    );
-
-    // show the dialog
+  /// 🔹 LOGOUT DIALOG
+  void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Text(TextConstant.logout),
+        content: Text(TextConstant.logoutmsg),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(TextConstant.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await LocalSharePreferences().logOut();
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.entryScreen,
+                    (_) => false,
+              );
+            },
+            child: Text(TextConstant.ok),
+          ),
+        ],
+      ),
     );
   }
-
-
 }

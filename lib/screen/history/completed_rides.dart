@@ -31,14 +31,14 @@ class _CompletedScreenState extends State<CompletedScreen> {
       body: Consumer<RideProvider>(
           builder: (context, rideProvider, child)=> Container(
           padding: EdgeInsets.all(16),
-          child: rideProvider.completedRideList.isEmpty?Center(child: Text(
+          child: widget.rideList!.isEmpty?Center(child: Text(
             "No Rides Found",style: TextStyle(
             fontSize: 16,fontWeight: FontWeight.bold,
           ),
           )):ListView.builder(
-            itemCount: rideProvider.completedRideList.length,
+            itemCount: widget.rideList!.length,
               itemBuilder: (context,index){
-              return getRidesWidget(rideProvider.completedRideList[index]);
+              return getRidesWidget(widget.rideList![index]);
             }
           ),
         ),

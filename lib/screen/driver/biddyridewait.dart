@@ -5,6 +5,7 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:biddy_driver/constant/api_constant.dart';
 import 'package:biddy_driver/constant/app_constant.dart';
 import 'package:biddy_driver/constant/imageconstant.dart';
+import 'package:biddy_driver/model/base_model/ride_model.dart';
 import 'package:biddy_driver/provider/book_ride_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,12 +15,12 @@ import '../../model/ride_status_change_response.dart';
 import '../../route/app_routes.dart';
 
 class BiddyWaitScreen extends StatefulWidget {
-  final int rideId;
+  final RideData ride;
   final int driverId;
 
   const BiddyWaitScreen({
     super.key,
-    required this.rideId,
+    required this.ride,
     required this.driverId,
   });
 
@@ -54,6 +55,7 @@ class _BiddyWaitState extends State<BiddyWaitScreen> {
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               DefaultTextStyle(
                 style: const TextStyle(
@@ -99,61 +101,81 @@ class _BiddyWaitState extends State<BiddyWaitScreen> {
   // ================= API =================
 
   Future<void> _checkRideStatus() async {
-    if (_navigated) return;
+    if (_navigated || !mounted) return;
 
     final String url =
-        "${APIConstants.GET_RIDE_BY_ID}${widget.rideId}";
+        "${APIConstants.GET_RIDE_BY_ID}${widget.ride.id}";
     debugPrint("Checking ride status: $url");
 
     try {
       final response = await http.get(Uri.parse(url));
 
+      if (!mounted) return;
+
+      debugPrint("Ride status response: ${response.body}");
+
       if (response.statusCode != 200) {
-        _goHome();
+        _stopAndGoHome();
         return;
       }
 
       final RideStatusChangeResponse ride =
       RideStatusChangeResponse.fromJson(
-          jsonDecode(response.body));
+        jsonDecode(response.body),
+      );
 
-      final status =
-          ride.data?.status?.toLowerCase() ?? "";
+      final String status =
+          ride.data?.status?.toUpperCase() ?? "";
 
+      debugPrint("Ride status parsed: $status");
+
+      /// ⏳ PENDING
       if (status == AppConstant.status_pending) {
         _retryCount++;
+
         if (_retryCount >= 10) {
-          _timer?.cancel();
-          _goHome();
+          _stopAndGoHome();
         }
         return;
       }
 
+      /// ✅ ACCEPTED
       if (status == AppConstant.status_accepted) {
+        _navigated = true;
         _timer?.cancel();
 
         if (!mounted) return;
-
-        _navigated = true;
 
         if (ride.data?.driverId?.id == widget.driverId) {
           Navigator.pushReplacementNamed(
             context,
             AppRoutes.bookedride,
-            arguments: {
-              "rideId": widget.rideId,
-            },
+            arguments: ride.data,
           );
         } else {
-          _goHome();
+          _stopAndGoHome();
         }
       }
-    } catch (e) {
+    } catch (e, s) {
       debugPrint("Ride status API failed: $e");
+      debugPrintStack(stackTrace: s);
     }
   }
 
+
   // ================= NAVIGATION =================
+
+  void _stopAndGoHome() {
+    if (_navigated) return;
+
+    _navigated = true;
+    _timer?.cancel();
+
+    if (!mounted) return;
+
+    _goHome();
+  }
+
 
   void _goHome() {
     if (!mounted || _navigated) return;

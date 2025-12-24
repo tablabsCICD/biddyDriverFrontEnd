@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:biddy_driver/constant/api_constant.dart';
 import 'package:biddy_driver/constant/text_constant.dart';
+import 'package:biddy_driver/model/base_model/ride_model.dart';
 import 'package:biddy_driver/model/base_model/vehicle_model.dart';
 import 'package:biddy_driver/model/driverinfo.dart';
 import 'package:biddy_driver/model/ride_accept_request.dart';
@@ -30,6 +31,7 @@ import '../../route/app_routes.dart';
 import '../../util/location.dart';
 import '../../util/sharepreferences.dart';
 import '../../widgets/driver/floating_appbar_wrapper.dart';
+import 'package:http/http.dart' as http;
 
 class HomeScreenDriver extends StatefulWidget {
   const HomeScreenDriver({super.key});
@@ -184,7 +186,7 @@ class _HomeScreenState extends State<HomeScreenDriver> {
   }
 
 
-  void _scaleDialog(RideBookingData data) {
+  void _scaleDialog(RideData data) {
     isDialog = true;
     print('the type is ${data.typeOfRide!}');
     if (data.typeOfRide!.toLowerCase().contains(AppConstant.type_of_ride_bidding.toLowerCase())) {
@@ -223,7 +225,7 @@ class _HomeScreenState extends State<HomeScreenDriver> {
   TextEditingController _textFieldController = TextEditingController();
   String amountVal = "0";
 
-  Widget _dialogBiddy(BuildContext context, RideBookingData data) {
+  Widget _dialogBiddy(BuildContext context, RideData data) {
     return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
@@ -528,7 +530,7 @@ class _HomeScreenState extends State<HomeScreenDriver> {
   }
 
 
-  Widget _dialog(BuildContext context, RideBookingData data) {
+  Widget _dialog(BuildContext context, RideData data) {
     return AlertDialog(
       title: Center(child: Text("Ride Request")),
       content: Container(
@@ -882,7 +884,7 @@ class _HomeScreenState extends State<HomeScreenDriver> {
     }
   }
 
-  void callAccept(RideBookingData rideBookingData) async {
+  void callAccept(RideData rideBookingData) async {
     mytimer.cancel();
     isLoading = true;
     setState(() {});
@@ -927,7 +929,7 @@ class _HomeScreenState extends State<HomeScreenDriver> {
     isLoading = false;
     setState(() {});
   }
-  Future<void> sendBid(RideBookingData data) async {
+  Future<void> sendBid(RideData data) async {
     try {
       if (mytimer != null) {
         mytimer.cancel();
@@ -953,19 +955,28 @@ class _HomeScreenState extends State<HomeScreenDriver> {
       debugPrint("Send Bid Url::: $url");
       debugPrint("Request::: ${rideBid.toJson()}");
 
-      ApiResponse apiResponse = await AppConstant.apiHelper
-          .postDataArgument(url, rideBid.toJson());
+     /* ApiResponse apiResponse = await AppConstant.apiHelper
+          .postDataArgument(url, rideBid.toJson());*/
 
-      debugPrint("Response::: ${apiResponse.response}");
 
-      if (apiResponse.status == 200 || apiResponse.status == 201) {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(rideBid.toJson()),
+      );
+
+      debugPrint("Response::: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         if (!mounted) return;
 
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => BiddyWaitScreen(
-              rideId: data.id!,
+              ride: data,
               driverId: uId,
             ),
           ),

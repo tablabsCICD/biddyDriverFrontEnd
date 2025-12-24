@@ -1,7 +1,6 @@
 
 
 import 'package:biddy_driver/entry_screen.dart';
-import 'package:biddy_driver/history/history_screen.dart';
 import 'package:biddy_driver/model/base_model/driver_model.dart';
 import 'package:biddy_driver/model/base_model/ride_model.dart';
 import 'package:biddy_driver/screen/add_routes.dart';
@@ -12,6 +11,7 @@ import 'package:biddy_driver/screen/driver/view_vehicle.dart';
 import 'package:biddy_driver/screen/driver_document/registration_copy.dart';
 import 'package:biddy_driver/screen/earning/driver_earning.dart';
 import 'package:biddy_driver/screen/earning/work_history.dart';
+import 'package:biddy_driver/screen/history/history_screen.dart';
 import 'package:biddy_driver/screen/wallet/wallet_screen.dart';
 import 'package:biddy_driver/model/cabDetails.dart';
 import 'package:flutter/cupertino.dart';
@@ -32,7 +32,6 @@ import '../screen/home/booked_ride_screen.dart';
 
 import '../screen/menu/edit_profile.dart';
 import '../screen/menu/profile_sceen.dart';
-import '../screen/past_ride/past_ride_details.dart';
 import '../widgets/driver/splashed_flex.dart';
 import 'app_routes.dart';
 
